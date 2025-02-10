@@ -4,6 +4,8 @@
     --background-color: #f8f9fa;
     --border-color: #ddd;
     --text-color: #333;
+    --red-btn: #dc3545;
+    --red-btn-hover: #bd2130;
 }
 
 body {
@@ -46,12 +48,13 @@ input {
     list-style-type: none;
 }
 
+/* Style des catégories */
 .category-item {
     font-weight: bold;
     font-size: 18px;
     color: var(--primary-color);
     margin-top: 10px;
-    margin-left: 3vw;
+    margin-left: 2vw;
     padding: 10px;
     display: flex;
     gap: 10px;
@@ -59,6 +62,7 @@ input {
     border-radius: 5px;
 }
 
+/* Style des actions de la catégorie */
 .category-actions {
     display: flex;
     gap: 10px;
@@ -82,4 +86,67 @@ input {
 .category-actions button:hover {
     background-color: var(--background-color);
     color: white;
+}
+
+/* Style du fond du modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+/* Contenu du modal */
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 400px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Boutons */
+.modal-buttons {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-evenly;
+}
+
+#editInput {
+    max-width: 370px;
+    margin-top: 15px;
+}
+
+/* Styles des boutons */
+button.confirm {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button.cancel {
+    background-color: var(--red-btn);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button.confirm:hover {
+    background-color: var(--primary-hover-color);
+}
+
+button.cancel:hover {
+    background-color: var(--red-btn-hover);
 }

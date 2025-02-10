@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
 
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <h1>CATÉGORIES</h1>
 
@@ -26,6 +28,35 @@
         <!-- Liste des catégories - javascript-->
     </ul>
 
+    <!-- Modal de confirmation de suppression -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h2>Suppression</h2>
+            <p>Souhaitez-vous supprimer la catégorie ?</p>
+            <p>Si elle contient des sous-catégories, elles seront aussi supprimées. Cette opération est irréversible.
+            </p>
+            <div class="modal-buttons">
+                <button id="confirmDelete" class="confirm">OUI</button>
+                <button id="cancelDelete" class="cancel">NON</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de modification -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2>Modifier l'intitulé</h2>
+            <label for="editInput">Intitulé actuel</label>
+            <input type="text" id="editInput">
+            <div class="modal-buttons">
+                <button id="saveEdit" class="confirm">METTRE À JOUR</button>
+                <button id="cancelEdit" class="cancel">ANNULER</button>
+            </div>
+        </div>
+    </div>
+
+
     <script src="app.js"></script>
 </body>
+
 </html>
