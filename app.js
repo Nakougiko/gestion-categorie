@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addCategoryBtn.addEventListener("click", () => {
         const categoryName = categoryInput.value.trim();
         if (categoryName === "") {
-            alert("Veuillez entrer un nom de catégorie.");
+            showToast("Veuillez entrer un nom de catégorie.", "error");
             return;
         }
 
@@ -81,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Category added successfully: ", newCategory);
             //debugCategories();
             loadCategories();
+            showToast("Catégorie ajoutée avec succès.", "success");
             categoryInput.value = "";
         };
 
@@ -197,10 +198,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 Promise.all(deletePromises).then(() => {
                     console.log("Categories deleted successfully");
-
                     document.getElementById("categoryList").innerHTML = "";
-
+                    
                     loadCategories();
+                    showToast("Catégorie supprimée avec succès.", "success");
                     deleteModal.style.display = "none";
                 }).catch((error) => {
                     console.error("Error on delete:", error);
@@ -236,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 let updateRequest = store.put(category);
                 updateRequest.onsuccess = function () {
                     console.log("Category updated successfully");
+                    showToast("Catégorie modifiée avec succès.", "success");
                     loadCategories();
                 };
 
@@ -245,6 +247,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 editModal.style.display = "none";
             }
+        } else {
+            showToast("Veuillez entrer un nom de catégorie.", "error");
         }
     }
 
@@ -264,7 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmAddSubCategory.onclick = function () {
         let subCategoryName = subCategoryNameInput.value.trim();
         if (subCategoryName === "") {
-            alert("Veuillez entrer un nom de sous-catégorie.");
+            showToast("Veuillez entrer un nom de sous-catégorie.", "error");
             return;
         }
 
@@ -282,6 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
         request.onsuccess = function (event) {
             console.log("Sub-category added successfully: ", newSubCategory);
             loadCategories();
+            showToast("Sous-catégorie ajoutée avec succès.", "success");
             subCategoryNameInput.value = "";
             addSubCategoryModal.style.display = "none";
         };
