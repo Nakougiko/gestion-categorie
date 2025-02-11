@@ -203,11 +203,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Bouton de suppression modal
     confirmDelete.onclick = function () {
         if (categoryToDelete !== null) {
-            let transaction = db.transaction(["categories"], "readonly");
-            let store = transaction.objectStore("categories");
-            let index = store.index("parentId");
+            let transaction = db.transaction(["categories", "products"], "readonly");
+            let categoryStore = transaction.objectStore("categories");
+            let productStore = transaction.objectStore("products");
+            let index = categoryStore.index("parentId");
+            let productIndex = productStore.index("category");
 
             let allToDelete = [categoryToDelete];
+            let productsToDelete = [];
 
             function collectSubCategories(parentId) {
                 return new Promise((resolve) => {
@@ -224,28 +227,54 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
 
-            collectSubCategories(categoryToDelete).then(() => {
+            function collectProducts() {
+                return new Promise((resolve) => {
+                    let productPromises = allToDelete.map((category) => {
+                        return new Promise((resolveProduct) => {
+                            let request = productIndex.getAll(category);
+                            request.onsuccess = function () {
+                                let products = request.result || [];
+                                products.forEach((product) => productsToDelete.push(product.id));
+                                resolveProduct();
+                            };
+                        });
+                    });
+
+                    Promise.all(productPromises).then(() => resolve());
+                    });
+                }
+
+                collectSubCategories(categoryToDelete).then(() => {
                 console.log("All categories to delete: ", allToDelete);
 
-                let deleteTransaction = db.transaction(["categories"], "readwrite");
-                let deleteStore = deleteTransaction.objectStore("categories");
+                collectProducts().then(() => {
+                    console.log("All products to delete: ", productsToDelete);
 
-                let deletePromises = allToDelete.map((categoryId) => {
-                    return new Promise((resolve) => {
-                        let request = deleteStore.delete(categoryId);
-                        request.onsuccess = () => resolve();
+                    let deleteTransaction = db.transaction(["categories", "products"], "readwrite");
+                    let deleteCategoryStore = deleteTransaction.objectStore("categories");
+                    let deleteProductStore = deleteTransaction.objectStore("products");
+
+                    // Supprimer toutes les catégories
+                    allToDelete.forEach((categoryId) => {
+                        deleteCategoryStore.delete(categoryId);
                     });
-                });
 
-                Promise.all(deletePromises).then(() => {
-                    console.log("Categories deleted successfully");
-                    document.getElementById("categoryList").innerHTML = "";
-                    
-                    loadCategories();
-                    showToast("Catégorie supprimée avec succès.", "success");
-                    deleteModal.style.display = "none";
-                }).catch((error) => {
-                    console.error("Error on delete:", error);
+                    // Supprimer tous les produits
+                    productsToDelete.forEach((productId) => {
+                        deleteProductStore.delete(productId);
+                    });
+
+                    deleteTransaction.oncomplete = function () {
+                        console.log("Categories and products deleted successfully");
+                        document.getElementById("categoryList").innerHTML = "";
+                        loadCategories();
+                        showToast("Catégorie supprimée avec succès.", "success");
+                        deleteModal.style.display = "none";
+                    };
+
+                    deleteTransaction.onerror = function (event) {
+                        console.log("Error on delete: " + event.target.errorCode);
+                    }
                 });
             });
         }
