@@ -1,0 +1,46 @@
+.product-list {
+    margin-left: 20px;
+    padding-left: 10px;
+    border-left: 2px solid var(--vert-light);
+    margin-top: 5px;
+}
+
+.product-item {
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.product-item span {
+    font-weight: bold;
+    color: var(--vert-light);
+    font-size: 1.2em;
+}
+
+.product-item::before {
+    content: "📦 ";
+    font-size: 1.2em;
+}
+
+.product-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.product-actions button {
+    background: white;
+    border: 1px solid var(--border-color);
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.product-actions button:hover {
+    background: var(--background-color);
+    color: white;
+}
