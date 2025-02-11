@@ -1,0 +1,38 @@
+:root {
+    --primary-color: #007bff;
+    --primary-hover-color: #0056b3;
+    --background-color: #f8f9fa;
+    --border-color: #ddd;
+    --text-color: #333;
+    --red-btn: #dc3545;
+    --red-btn-hover: #bd2130;
+    --vert-light: #28a745;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    color: var(--text-color);
+}
+
+h1 {
+    font-size: 24px;
+}
+
+input {
+    padding: 8px 12px; 
+    margin-right: 10px;
+    font-size: 16px; 
+    width: 100%; 
+    max-width: 400px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+}
+
+/* Boutons */
+button {
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
