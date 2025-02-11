@@ -2,11 +2,11 @@
 <html lang="fr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gestion de catégorie</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
@@ -14,13 +14,13 @@
 
     <!-- Recherche -->
     <div>
-        <input type="text" id="search" placeholder="Rechercher une catégorie ou un produit">
+        <input type="text" id="search" placeholder="Rechercher une catégorie ou un produit" />
     </div>
-    <br>
+    <br />
 
     <!-- Ajout de catégories -->
     <div>
-        <input type="text" id="categoryName" placeholder="Intitulé de la catégorie à ajouter">
+        <input type="text" id="categoryName" placeholder="Intitulé de la catégorie à ajouter" />
         <button id="addCategory">Ajouter une catégorie de niveau 1</button>
     </div>
 
@@ -33,7 +33,9 @@
         <div class="modal-content">
             <h2>Suppression</h2>
             <p>Souhaitez-vous supprimer la catégorie ?</p>
-            <p>Si elle contient des sous-catégories, elles seront aussi supprimées. Cette opération est irréversible.
+            <p>
+                Si elle contient des sous-catégories, elles seront aussi supprimées.
+                Cette opération est irréversible.
             </p>
             <div class="modal-buttons">
                 <button id="confirmDelete" class="confirm">OUI</button>
@@ -47,7 +49,7 @@
         <div class="modal-content">
             <h2>Modifier l'intitulé</h2>
             <label for="editInput">Intitulé actuel</label>
-            <input type="text" id="editInput">
+            <input type="text" id="editInput" class="modal-input"/>
             <div class="modal-buttons">
                 <button id="saveEdit" class="confirm">METTRE À JOUR</button>
                 <button id="cancelEdit" class="cancel">ANNULER</button>
@@ -55,6 +57,17 @@
         </div>
     </div>
 
+    <!-- Modal d'ajout de sous-catégorie -->
+    <div id="addSubCategoryModal" class="modal">
+        <div class="modal-content">
+            <h2>Ajouter une sous-catégorie</h2>
+            <input type="text" id="subCategoryName" placeholder="Nom de la sous-catégorie" class="modal-input"/>
+            <div class="modal-buttons">
+                <button id="confirmAddSubCategory" class="confirm">Ajouter</button>
+                <button id="cancelAddSubCategory" class="cancel">Annuler</button>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>

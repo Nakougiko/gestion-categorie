@@ -1,15 +1,27 @@
 let db;
 
-// Les modals
+// DOM
+const categoryInput = document.getElementById("categoryName");
+const addCategoryBtn = document.getElementById("addCategory");
+const categoryList = document.getElementById("categoryList");
+
+// Modal pour la suppresion
 const deleteModal = document.getElementById("deleteModal");
 const confirmDelete = document.getElementById("confirmDelete");
 const cancelDelete = document.getElementById("cancelDelete");
 
-// Les boutons des modals
+
+// Modal pour la modification
 const editModal = document.getElementById("editModal");
 const editInput = document.getElementById("editInput");
 const updateCategory = document.getElementById("saveEdit");
 const cancelEdit = document.getElementById("cancelEdit");
+
+// Modal pour ajouter une sous-catégorie
+const addSubCategoryModal = document.getElementById("addSubCategoryModal");
+const confirmAddSubCategory = document.getElementById("confirmAddSubCategory");
+const cancelAddSubCategory = document.getElementById("cancelAddSubCategory");
+const subCategoryNameInput = document.getElementById("subCategoryName");
 
 // Les variables pour stocker les catégories à supprimer et à modifier
 let categoryToDelete = null;
@@ -46,11 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Error: " + event.target.errorCode);
     };
 
-    // DOM
-    const categoryInput = document.getElementById("categoryName");
-    const addCategoryBtn = document.getElementById("addCategory");
-    const categoryList = document.getElementById("categoryList");
-
     // Ajouter une catégorie
     addCategoryBtn.addEventListener("click", () => {
         const categoryName = categoryInput.value.trim();
@@ -74,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Category added successfully: ", newCategory);
             //debugCategories();
             loadCategories();
+            categoryInput.value = "";
         };
 
         request.onerror = function (event) {
@@ -247,7 +255,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Fontion ajouter une sous-catégorie
     function addSubCategory(parentId) {
-        let subCategoryName = prompt("Entrez le nom de la sous-catégorie :").trim();
+        parentCategoryId = parentId;
+        subCategoryNameInput.value = "";
+        addSubCategoryModal.style.display = "flex";
+    }
+
+    // Click sur le bouton de confirmation pour ajouter une sous-catégorie
+    confirmAddSubCategory.onclick = function () {
+        let subCategoryName = subCategoryNameInput.value.trim();
         if (subCategoryName === "") {
             alert("Veuillez entrer un nom de sous-catégorie.");
             return;
@@ -255,7 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let newSubCategory = {
             intitule: subCategoryName,
-            parentId: parentId,
+            parentId: parentCategoryId,
             created: new Date().toISOString().slice(0, 19).replace("T", " "),
             modified: new Date().toISOString().slice(0, 19).replace("T", " "),
         };
@@ -264,14 +279,21 @@ document.addEventListener("DOMContentLoaded", () => {
         let store = transaction.objectStore("categories");
         let request = store.add(newSubCategory);
 
-        request.onsuccess = function () {
-            console.log("Sub-category added successfully");
+        request.onsuccess = function (event) {
+            console.log("Sub-category added successfully: ", newSubCategory);
             loadCategories();
+            subCategoryNameInput.value = "";
+            addSubCategoryModal.style.display = "none";
         };
 
         request.onerror = function (event) {
-            console.log("Error on add sub-category: " + event.target.error);
+            console.log("Error on add: " + event.target.errorCode);
         };
+    }
+
+    // Bouton d'annulation pour ajouter une sous-catégorie
+    cancelAddSubCategory.onclick = function () {
+        addSubCategoryModal.style.display = "none";
     }
 
     /*function debugCategories() {
