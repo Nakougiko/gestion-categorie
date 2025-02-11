@@ -23,9 +23,18 @@ const confirmAddSubCategory = document.getElementById("confirmAddSubCategory");
 const cancelAddSubCategory = document.getElementById("cancelAddSubCategory");
 const subCategoryNameInput = document.getElementById("subCategoryName");
 
+// Modal pour ajouter un produit
+const addProductModal = document.getElementById("addProductModal");
+const productNameInput = document.getElementById("productName");
+const productDescriptionInput = document.getElementById("productDescription");
+const confirmAddProduct = document.getElementById("confirmAddProduct");
+const cancelAddProduct = document.getElementById("cancelAddProduct");
+
 // Les variables pour stocker les catégories à supprimer et à modifier
 let categoryToDelete = null;
 let categoryToEdit = null;
+
+let selectedCategoryId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     // IndexedDB
@@ -35,16 +44,30 @@ document.addEventListener("DOMContentLoaded", () => {
         let db = event.target.result;
 
         if (!db.objectStoreNames.contains("categories")) {
-            let store = db.createObjectStore("categories", {
+            let categoryStore = db.createObjectStore("categories", {
                 keyPath: "id",
                 autoIncrement: true,
             });
 
             // Création des index
-            store.createIndex("intitule", "intitule", { unique: false });
-            store.createIndex("parentId", "parentId", { unique: false });
-            store.createIndex("created", "created", { unique: false });
-            store.createIndex("modified", "modified", { unique: false });
+            categoryStore.createIndex("intitule", "intitule", { unique: false });
+            categoryStore.createIndex("parentId", "parentId", { unique: false });
+            categoryStore.createIndex("created", "created", { unique: false });
+            categoryStore.createIndex("modified", "modified", { unique: false });   
+        }
+
+        if (!db.objectStoreNames.contains("products")) {
+            let productStore = db.createObjectStore("products", {
+                keyPath: "id",
+                autoIncrement: true,
+            });
+
+            // Création des index
+            productStore.createIndex("intitule", "intitule", { unique: false });
+            productStore.createIndex("descriptif", "descriptif", { unique: false });
+            productStore.createIndex("category", "category", { unique: false });
+            productStore.createIndex("created", "created", { unique: false });
+            productStore.createIndex("modified", "modified", { unique: false });
         }
     };
 
@@ -130,21 +153,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span class="${categoryNameClass}">${category.intitule}</span>
                     <div class="category-actions">
                         <button class="add-sub-category">➕</button>
+                        <button class="add-product">🛒</button>
                         <button class="edit-category">✏️</button>
                         <button class="delete-btn">🗑️</button>
                     </div>
                 </div>
+                <div class="product-list" id="product-list-${category.id}"></div>
                 <div class="sub-category-container"></div> 
             `;
 
                 let subCategoryContainer = categoryContainer.querySelector(".sub-category-container");
                 loadCategories(category.id, subCategoryContainer, level + 1);
+                loadProducts(category.id);
 
                 container.appendChild(categoryContainer);
 
                 categoryContainer.querySelector(".add-sub-category").addEventListener("click", () => addSubCategory(category.id));
                 categoryContainer.querySelector(".edit-category").addEventListener("click", () => editCategory(category.id, category.intitule));
                 categoryContainer.querySelector(".delete-btn").addEventListener("click", () => deleteCategory(category.id));
+                categoryContainer.querySelector(".add-product").addEventListener("click", () => addProduct(category.id));
             });
         };
 
@@ -299,6 +326,126 @@ document.addEventListener("DOMContentLoaded", () => {
     // Bouton d'annulation pour ajouter une sous-catégorie
     cancelAddSubCategory.onclick = function () {
         addSubCategoryModal.style.display = "none";
+    }
+
+    // Fonction pour ajouter un produit
+    function addProduct(categoryId) {
+        selectedCategoryId = categoryId;
+        productNameInput.value = "";
+        productDescriptionInput.value = "";
+        addProductModal.style.display = "flex";
+    }
+
+    // Click sur le bouton de confirmation pour ajouter un produit
+    confirmAddProduct.onclick = function () {
+        let productName = productNameInput.value.trim();
+        let productDescription = productDescriptionInput.value.trim();
+
+        if (productName === "" || productDescription === "") {
+            showToast("Veuillez entrer un nom et une description de produit.", "error");
+            return;
+        }
+
+        let newProduct = {
+            intitule: productName,
+            descriptif: productDescription,
+            category: selectedCategoryId,
+            created: new Date().toISOString().slice(0, 19).replace("T", " "),
+            modified: new Date().toISOString().slice(0, 19).replace("T", " "),
+        };
+
+        let transaction = db.transaction(["products"], "readwrite");
+        let store = transaction.objectStore("products");
+        let request = store.add(newProduct);
+
+        request.onsuccess = function (event) {
+            console.log("Product added successfully: ", newProduct);
+            showToast("Produit ajouté avec succès.", "success");
+            productNameInput.value = "";
+            productDescriptionInput.value = "";
+            addProductModal.style.display = "none";
+            loadProducts(selectedCategoryId);
+        };
+
+        request.onerror = function (event) {
+            console.log("Error on add: " + event.target.errorCode);
+        };
+    }
+
+    // Bouton d'annulation pour ajouter un produit
+    cancelAddProduct.onclick = function () {
+        addProductModal.style.display = "none";
+    }
+
+    // Charger les produits
+    function loadProducts(categoryId) {
+        let transaction = db.transaction(["products"], "readonly");
+        let store = transaction.objectStore("products");
+
+        if (!store.indexNames.contains("category")) {
+            console.error("Index not found: category");
+            return;
+        }
+
+        let index = store.index("category");
+        let request = index.getAll(categoryId);
+
+        request.onsuccess = function () {
+            let products = request.result || [];
+
+            if (products.length === 0) {
+                console.warn("No products found for category: " + categoryId);
+            }
+
+            console.log("Products for category " + categoryId + ":", products);
+
+            // Container pour les produits
+            let productContainer = document.getElementById(`product-list-${categoryId}`);
+            if (!productContainer) {
+                let categoryContainer = document.querySelector(`[data-category-id='${categoryId}']`);
+                if (!categoryContainer) {
+                    console.error("Category container not found for category: " + categoryId);
+                    return;
+                }
+
+                productContainer = document.createElement("div");
+                productContainer.id = `product-list-${categoryId}`;
+                productContainer.classList.add("product-list");
+                categoryContainer.appendChild(productContainer);
+            }
+
+            productContainer.innerHTML = "";
+
+            products.forEach((product) => {
+                let productItem = document.createElement("div");
+                productItem.classList.add("product-item");
+                productItem.innerHTML = `<span>${product.intitule}</span> - <p>${product.descriptif}</p>`;
+                productContainer.appendChild(productItem);
+            });
+        };
+
+        request.onerror = function (event) {
+            console.log("Error on load: " + event.target.errorCode);
+        };
+    }
+
+    // Fermer les fenetres des modals en cliquant ailleurs
+    window.onclick = function (event) {
+        if (event.target === deleteModal) {
+            deleteModal.style.display = "none";
+        }
+
+        if (event.target === editModal) {
+            editModal.style.display = "none";
+        }
+
+        if (event.target === addSubCategoryModal) {
+            addSubCategoryModal.style.display = "none";
+        }
+
+        if (event.target === addProductModal) {
+            addProductModal.style.display = "none";
+        }
     }
 
     /*function debugCategories() {

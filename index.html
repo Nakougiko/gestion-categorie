@@ -24,9 +24,9 @@
         <button id="addCategory">Ajouter une catégorie de niveau 1</button>
     </div>
 
-    <ul id="categoryList">
+    <div id="categoryList">
         <!-- Liste des catégories - javascript-->
-    </ul>
+    </div>
 
     <!-- Modal de confirmation de suppression -->
     <div id="deleteModal" class="modal">
@@ -49,7 +49,7 @@
         <div class="modal-content">
             <h2>Modifier l'intitulé</h2>
             <label for="editInput">Intitulé actuel</label>
-            <input type="text" id="editInput" class="modal-input"/>
+            <input type="text" id="editInput" class="modal-input" />
             <div class="modal-buttons">
                 <button id="saveEdit" class="confirm">METTRE À JOUR</button>
                 <button id="cancelEdit" class="cancel">ANNULER</button>
@@ -61,10 +61,23 @@
     <div id="addSubCategoryModal" class="modal">
         <div class="modal-content">
             <h2>Ajouter une sous-catégorie</h2>
-            <input type="text" id="subCategoryName" placeholder="Intitulé de la sous-catégorie" class="modal-input"/>
+            <input type="text" id="subCategoryName" placeholder="Intitulé de la sous-catégorie" class="modal-input" />
             <div class="modal-buttons">
                 <button id="confirmAddSubCategory" class="confirm">Ajouter</button>
                 <button id="cancelAddSubCategory" class="cancel">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'ajout de produit -->
+    <div id="addProductModal" class="modal">
+        <div class="modal-content">
+            <h2>Ajouter un Produit</h2>
+            <input type="text" id="productName" placeholder="Intitulé du produit" class="modal-input"/>
+            <textarea id="productDescription" placeholder="Description du produit" class="modal-textarea"></textarea>
+            <div class="modal-actions">
+                <button id="confirmAddProduct" class="confirm">Ajouter</button>
+                <button id="cancelAddProduct" class="cancel">Annuler</button>
             </div>
         </div>
     </div>

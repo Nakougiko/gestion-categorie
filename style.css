@@ -6,6 +6,7 @@
     --text-color: #333;
     --red-btn: #dc3545;
     --red-btn-hover: #bd2130;
+    --vert-light: #28a745;
 }
 
 body {
@@ -98,6 +99,56 @@ input {
     border-left: 2px solid var(--border-color);
 }
 
+/* Produits */
+.product-list {
+    margin-left: 20px; /* Décalage pour montrer qu'il appartient à la catégorie */
+    padding-left: 10px;
+    border-left: 2px solid var(--vert-light);
+    margin-top: 5px;
+}
+
+.product-item {
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.product-item span {
+    font-weight: bold;
+    color: var(--vert-light);
+    font-size: 1.2em;
+}
+
+.product-item::before {
+    content: "📦 ";
+    font-size: 1.2em;
+}
+
+
+.product-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.product-actions button {
+    background: white;
+    border: 1px solid var(--border-color);
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.product-actions button:hover {
+    background: var(--background-color);
+    color: white;
+}
+
+
 /* Style du fond du modal */
 .modal {
     display: none;
@@ -132,6 +183,33 @@ input {
 .modal-input {
     max-width: 370px;
     margin-top: 15px;
+}
+
+.modal-textarea {
+    max-width: 370px;
+    margin-top: 15px;
+}
+
+textarea {
+    width: 100%;  /* Largeur à 100% du conteneur */
+    min-height: 60px;  /* Hauteur minimale */
+    max-height: 150px; /* Hauteur maximale pour éviter un champ trop grand */
+    resize: vertical; /* Permet à l'utilisateur d'agrandir le champ uniquement verticalement */
+    padding: 8px;
+    margin-top: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    outline: none; /* Enlève le contour bleu par défaut */
+}
+
+/* Effet au focus */
+textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
 /* Styles des boutons */
@@ -192,7 +270,7 @@ button.cancel:hover {
 }
 
 .toast-success {
-    background-color: #28a745;
+    background-color: var(--vert-light);
 }
 
 @keyframes fadeIn {
