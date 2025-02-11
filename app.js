@@ -1,31 +1,39 @@
 let db;
 
+// Les modals
 const deleteModal = document.getElementById("deleteModal");
 const confirmDelete = document.getElementById("confirmDelete");
 const cancelDelete = document.getElementById("cancelDelete");
 
+// Les boutons des modals
 const editModal = document.getElementById("editModal");
 const editInput = document.getElementById("editInput");
 const updateCategory = document.getElementById("saveEdit");
 const cancelEdit = document.getElementById("cancelEdit");
 
+// Les variables pour stocker les catégories à supprimer et à modifier
 let categoryToDelete = null;
 let categoryToEdit = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     // IndexedDB
-    let request = indexedDB.open("categoriesDB", 1);
+    let request = indexedDB.open("categoriesDB", 2); // on met la version en 2
 
     request.onupgradeneeded = function (event) {
         let db = event.target.result;
-        let store = db.createObjectStore("categories", {
-            keyPath: "id",
-            autoIncrement: true,
-        });
 
-        store.createIndex("intitule", "intitule", { unique: false });
-        store.createIndex("created", "created", { unique: false });
-        store.createIndex("modified", "modified", { unique: false });
+        if (!db.objectStoreNames.contains("categories")) {
+            let store = db.createObjectStore("categories", {
+                keyPath: "id",
+                autoIncrement: true,
+            });
+
+            // Création des index
+            store.createIndex("intitule", "intitule", { unique: false });
+            store.createIndex("parentId", "parentId", { unique: false });
+            store.createIndex("created", "created", { unique: false });
+            store.createIndex("modified", "modified", { unique: false });
+        }
     };
 
     request.onsuccess = function (event) {
@@ -43,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const addCategoryBtn = document.getElementById("addCategory");
     const categoryList = document.getElementById("categoryList");
 
+    // Ajouter une catégorie
     addCategoryBtn.addEventListener("click", () => {
         const categoryName = categoryInput.value.trim();
         if (categoryName === "") {
@@ -52,6 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let newCategory = {
             intitule: categoryName,
+            parentId: null, // null pour les catégories de niveau 1
             created: new Date().toISOString().slice(0, 19).replace("T", " "),
             modified: new Date().toISOString().slice(0, 19).replace("T", " "),
         };
@@ -61,7 +71,8 @@ document.addEventListener("DOMContentLoaded", () => {
         let request = store.add(newCategory);
 
         request.onsuccess = function (event) {
-            console.log("Category added successfully");
+            console.log("Category added successfully: ", newCategory);
+            //debugCategories();
             loadCategories();
         };
 
@@ -70,41 +81,61 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     });
 
-    function loadCategories() {
-        categoryList.innerHTML = "";
+    // Charger les catégories
+    function loadCategories(parentId = null, container = categoryList, level = 0) {
+        //console.log(`Loading categories with parentId: ${parentId}`);
+        container.innerHTML = "";
 
         let transaction = db.transaction(["categories"], "readonly");
         let store = transaction.objectStore("categories");
+
+        if (!store.indexNames.contains("parentId")) {
+            console.error("Index not found: parentId");
+            return;
+        }
+
         let request = store.getAll();
 
         request.onsuccess = function () {
-            let categories = request.result;
-            categories.forEach((category) => {
-                let categoryItem = document.createElement("li");
-                categoryItem.classList.add("category-item");
+            let allCategories = request.result;
+            //console.log("all categories", allCategories);
+            let categories = allCategories.filter((category) => category.parentId === parentId);
+            //console.log(`categories claim with parentId: ${parentId}`, categories);
 
-                categoryItem.innerHTML = `
-                    <span>${category.intitule}</span>
+            /*if (categories.length === 0) {
+                console.warn("No categories found with parentId: " + parentId);
+            }*/
+
+            categories.forEach((category) => {
+                //console.log("load category", category.intitule);
+
+                let categoryContainer = document.createElement("div");
+                categoryContainer.classList.add("category-container");
+                categoryContainer.style.marginLeft = `${level * 20}px`; 
+                
+                // pour mettre en bleue les catégories 1
+                let categoryNameClass = parentId === null ? "category-name category-lvl1" : "category-name";
+
+                categoryContainer.innerHTML = `
+                <div class="category-header">
+                    <span class="${categoryNameClass}">${category.intitule}</span>
                     <div class="category-actions">
-                    <button class="add-sub-category">➕</button>
-                    <button class="edit-category">✏️</button>
-                    <button class="delete-btn">🗑️</button>
+                        <button class="add-sub-category">➕</button>
+                        <button class="edit-category">✏️</button>
+                        <button class="delete-btn">🗑️</button>
+                    </div>
                 </div>
+                <div class="sub-category-container"></div> 
             `;
 
-                categoryItem
-                    .querySelector(".delete-btn")
-                    .addEventListener("click", () => {
-                        deleteCategory(category.id);
-                    });
+                let subCategoryContainer = categoryContainer.querySelector(".sub-category-container");
+                loadCategories(category.id, subCategoryContainer, level + 1);
 
-                categoryItem
-                    .querySelector(".edit-category")
-                    .addEventListener("click", () => {
-                        editCategory(category.id, category.intitule);
-                    });
+                container.appendChild(categoryContainer);
 
-                categoryList.appendChild(categoryItem);
+                categoryContainer.querySelector(".add-sub-category").addEventListener("click", () => addSubCategory(category.id));
+                categoryContainer.querySelector(".edit-category").addEventListener("click", () => editCategory(category.id, category.intitule));
+                categoryContainer.querySelector(".delete-btn").addEventListener("click", () => deleteCategory(category.id));
             });
         };
 
@@ -113,41 +144,72 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
+    // Supprimer une catégorie et ses sous-catégories
     function deleteCategory(categoryId) {
         categoryToDelete = categoryId;
         deleteModal.style.display = "flex";
     }
 
+    // Bouton de suppression modal
     confirmDelete.onclick = function () {
         if (categoryToDelete !== null) {
-            let transaction = db.transaction(["categories"], "readwrite");
+            let transaction = db.transaction(["categories"], "readonly");
             let store = transaction.objectStore("categories");
-            let request = store.delete(categoryToDelete);
+            let index = store.index('parentId');
 
-            request.onsuccess = function () {
-                console.log("Category deleted successfully");
-                loadCategories();
+            // Liste a supprimer
+            let allToDelete = [categoryToDelete];
+
+            function collectSubCategories(parentId, callback) {
+                let request = index.getAll(parentId);
+                request.onsuccess = function () {
+                    let subCategories = request.result || [];
+                    subCategories.forEach((subCategory) => {
+                        allToDelete.push(subCategory.id);
+                        collectSubCategories(subCategory.id, callback);
+                    });
+
+                    callback();
+                }
             }
+
+            collectSubCategories(categoryToDelete, function () {
+                console.log("All categories to delete: ", allToDelete);
+
+                let deleteTransaction = db.transaction(["categories"], "readwrite");
+                let deleteStore = deleteTransaction.objectStore("categories");
+
+                allToDelete.forEach((categoryId) => {
+                    deleteStore.delete(categoryId);
+                });
+
+                deleteTransaction.oncomplete = function () {
+                    console.log("Categories deleted successfully");
+                    loadCategories();
+                }
+
+                deleteTransaction.onerror = function (event) {
+                    console.log("Error on delete: " + event.target.errorCode);
+                }
+
+                deleteModal.style.display = "none";
+            });
         }
-
-        request.onerror = function (event) {
-            console.log("Error on delete: " + event.target.errorCode);
-        };
-
-        deleteModal.style.display = "none";
     }
 
+    // Bouton d'annulation modal
     cancelDelete.onclick = function () {
         deleteModal.style.display = "none";
     }
 
-
+    // Modifier une catégorie
     function editCategory(categoryId, currentName) {
         categoryToEdit = categoryId;
         editInput.value = currentName;
         editModal.style.display = "flex";
     }
 
+    // Bouton de modification modal
     updateCategory.onclick = function () {
         if (categoryToEdit !== null && editInput.value.trim() !== "") {
             let transaction = db.transaction(["categories"], "readwrite");
@@ -174,7 +236,51 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // Bouton d'annulation modal
     cancelEdit.onclick = function () {
         editModal.style.display = "none";
     }
+
+    // Fontion ajouter une sous-catégorie
+    function addSubCategory(parentId) {
+        let subCategoryName = prompt("Entrez le nom de la sous-catégorie :").trim();
+        if (subCategoryName === "") {
+            alert("Veuillez entrer un nom de sous-catégorie.");
+            return;
+        }
+
+        let newSubCategory = {
+            intitule: subCategoryName,
+            parentId: parentId,
+            created: new Date().toISOString().slice(0, 19).replace("T", " "),
+            modified: new Date().toISOString().slice(0, 19).replace("T", " "),
+        };
+
+        let transaction = db.transaction(["categories"], "readwrite");
+        let store = transaction.objectStore("categories");
+        let request = store.add(newSubCategory);
+
+        request.onsuccess = function () {
+            console.log("Sub-category added successfully");
+            loadCategories();
+        };
+
+        request.onerror = function (event) {
+            console.log("Error on add sub-category: " + event.target.error);
+        };
+    }
+
+    /*function debugCategories() {
+        let transaction = db.transaction(["categories"], "readonly");
+        let store = transaction.objectStore("categories");
+        let request = store.getAll();
+
+        request.onsuccess = function () {
+            console.log("All Categories: ", request.result);
+        };
+
+        request.onerror = function (event) {
+            console.log("Error on debug: " + event.target.errorCode);
+        }
+    }*/
 });

@@ -48,44 +48,53 @@ input {
     list-style-type: none;
 }
 
-/* Style des catégories */
-.category-item {
-    font-weight: bold;
-    font-size: 18px;
-    color: var(--primary-color);
+.category-container {
     margin-top: 10px;
-    margin-left: 2vw;
-    padding: 10px;
+}
+
+.category-header {
     display: flex;
-    gap: 10px;
+    justify-content: space-between;
     align-items: center;
+    padding: 10px;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
 }
 
-/* Style des actions de la catégorie */
+
+.category-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.category-lvl1 {
+    color: var(--primary-color) !important;
+    font-weight: bold;
+    font-size: 20px;
+}
+
 .category-actions {
     display: flex;
     gap: 10px;
-    margin-left: 1vw;
 }
 
 .category-actions button {
-    background-color: white;
+    background: white;
     border: 1px solid var(--border-color);
-    padding: 5px;
     border-radius: 5px;
+    padding: 5px 10px;
     cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
 }
 
 .category-actions button:hover {
-    background-color: var(--background-color);
-    color: white;
+    background: var(--background-color);
+}
+
+.sub-category-container {
+    margin-top: 20px;
+    padding-left: 10px;
+    border-left: 2px solid var(--border-color);
 }
 
 /* Style du fond du modal */
