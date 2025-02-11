@@ -111,8 +111,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 let categoryContainer = document.createElement("div");
                 categoryContainer.classList.add("category-container");
-                categoryContainer.style.marginLeft = `${level * 20}px`; 
-                
+                categoryContainer.style.marginLeft = `${level * 20}px`;
+
                 // pour mettre en bleue les catégories 1
                 let categoryNameClass = parentId === null ? "category-name category-lvl1" : "category-name";
 
@@ -155,52 +155,56 @@ document.addEventListener("DOMContentLoaded", () => {
         if (categoryToDelete !== null) {
             let transaction = db.transaction(["categories"], "readonly");
             let store = transaction.objectStore("categories");
-            let index = store.index('parentId');
+            let index = store.index("parentId");
 
-            // Liste a supprimer
             let allToDelete = [categoryToDelete];
 
-            function collectSubCategories(parentId, callback) {
-                let request = index.getAll(parentId);
-                request.onsuccess = function () {
-                    let subCategories = request.result || [];
-                    subCategories.forEach((subCategory) => {
-                        allToDelete.push(subCategory.id);
-                        collectSubCategories(subCategory.id, callback);
-                    });
+            function collectSubCategories(parentId) {
+                return new Promise((resolve) => {
+                    let request = index.getAll(parentId);
+                    request.onsuccess = function () {
+                        let subCategories = request.result || [];
+                        let subPromises = subCategories.map((subCategory) => {
+                            allToDelete.push(subCategory.id);
+                            return collectSubCategories(subCategory.id);
+                        });
 
-                    callback();
-                }
+                        Promise.all(subPromises).then(() => resolve()); // Attend que toutes les suppressions soient terminées
+                    };
+                });
             }
 
-            collectSubCategories(categoryToDelete, function () {
+            collectSubCategories(categoryToDelete).then(() => {
                 console.log("All categories to delete: ", allToDelete);
 
                 let deleteTransaction = db.transaction(["categories"], "readwrite");
                 let deleteStore = deleteTransaction.objectStore("categories");
 
-                allToDelete.forEach((categoryId) => {
-                    deleteStore.delete(categoryId);
+                let deletePromises = allToDelete.map((categoryId) => {
+                    return new Promise((resolve) => {
+                        let request = deleteStore.delete(categoryId);
+                        request.onsuccess = () => resolve();
+                    });
                 });
 
-                deleteTransaction.oncomplete = function () {
+                Promise.all(deletePromises).then(() => {
                     console.log("Categories deleted successfully");
+
+                    document.getElementById("categoryList").innerHTML = "";
+
                     loadCategories();
-                }
-
-                deleteTransaction.onerror = function (event) {
-                    console.log("Error on delete: " + event.target.errorCode);
-                }
-
-                deleteModal.style.display = "none";
+                    deleteModal.style.display = "none";
+                }).catch((error) => {
+                    console.error("Error on delete:", error);
+                });
             });
         }
-    }
+    };
 
-    // Bouton d'annulation modal
+    // Bouton d'annulation de suppression
     cancelDelete.onclick = function () {
         deleteModal.style.display = "none";
-    }
+    };
 
     // Modifier une catégorie
     function editCategory(categoryId, currentName) {
