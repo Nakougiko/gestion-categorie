@@ -30,11 +30,25 @@ const productDescriptionInput = document.getElementById("productDescription");
 const confirmAddProduct = document.getElementById("confirmAddProduct");
 const cancelAddProduct = document.getElementById("cancelAddProduct");
 
-// Les variables pour stocker les catégories à supprimer et à modifier
-let categoryToDelete = null;
-let categoryToEdit = null;
+// Modal pour modifier un produit
+const editProductModal = document.getElementById("editProductModal");
+const editProductNameInput = document.getElementById("editProductName");
+const editProductDescriptionInput = document.getElementById("editProductDescription");
+const saveEditProduct = document.getElementById("saveEditProduct");
+const cancelEditProduct = document.getElementById("cancelEditProduct");
 
-let selectedCategoryId = null;
+// Modal pour la suppression d'un produit
+const deleteProductModal = document.getElementById("deleteProductModal");
+const confirmDeleteProduct = document.getElementById("confirmDeleteProduct");
+const cancelDeleteProduct = document.getElementById("cancelDeleteProduct");
+
+// Les variables pour stocker les catégories à supprimer et à modifier
+let categoryToDelete = null; // Pour la suppression
+let categoryToEdit = null; // Pour la modification
+
+//
+let selectedCategoryId = null; // Pour ajouter un produit
+let editingProductId = null; // Pour la modification d'un produit
 
 document.addEventListener("DOMContentLoaded", () => {
     // IndexedDB
@@ -164,7 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 let subCategoryContainer = categoryContainer.querySelector(".sub-category-container");
                 loadCategories(category.id, subCategoryContainer, level + 1);
-                loadProducts(category.id);
+                loadProducts(category.id);              
 
                 container.appendChild(categoryContainer);
 
@@ -419,7 +433,17 @@ document.addEventListener("DOMContentLoaded", () => {
             products.forEach((product) => {
                 let productItem = document.createElement("div");
                 productItem.classList.add("product-item");
-                productItem.innerHTML = `<span>${product.intitule}</span> - <p>${product.descriptif}</p>`;
+                productItem.innerHTML = `
+                <span>${product.intitule}</span> - <p>${product.descriptif}</p>
+                <div class="product-actions">
+                    <button class="edit-product">✏️</button>
+                    <button class="delete-product">🗑️</button>
+                </div>
+                `;
+
+                productItem.querySelector(".edit-product").addEventListener("click", () => editProduct(product.id, product.intitule, product.descriptif));
+                productItem.querySelector(".delete-product").addEventListener("click", () => deleteProduct(product.id));
+
                 productContainer.appendChild(productItem);
             });
         };
@@ -427,6 +451,95 @@ document.addEventListener("DOMContentLoaded", () => {
         request.onerror = function (event) {
             console.log("Error on load: " + event.target.errorCode);
         };
+    }
+
+    // supprimer un produits
+    function deleteProduct(productId) {
+        editingProductId = productId;
+        deleteProductModal.style.display = "flex";
+    }
+
+    // Bouton de confirmation pour supprimer un produit
+    confirmDeleteProduct.onclick = function () {
+        if (!editingProductId) {
+            showToast("Erreur lors de la suppression du produit.", "error");
+            return;
+        }
+
+        let transaction = db.transaction(["products"], "readwrite");
+        let store = transaction.objectStore("products");
+
+        let request = store.delete(editingProductId);
+        request.onsuccess = function () {
+            console.log("Product deleted successfully");
+            showToast("Produit supprimé avec succès.", "success");
+            console.log(editingProductId);
+            loadCategories();
+        };
+
+        request.onerror = function (event) {
+            console.log("Error on delete: " + event.target.errorCode);
+        };
+
+        deleteProductModal.style.display = "none";
+    }
+
+    // Bouton d'annulation pour supprimer un produit
+    cancelDeleteProduct.onclick = function () {
+        deleteProductModal.style.display = "none";
+    }
+
+    // Modifier un produit
+    function editProduct(productId, currentName, currentDescription) {
+        editingProductId = productId;
+        editProductNameInput.value = currentName;
+        editProductDescriptionInput.value = currentDescription;
+        editProductModal.style.display = "flex";
+    }
+
+    // Bouton de sauvegarde pour modifier un produit
+    saveEditProduct.onclick = function () {
+        if (!editingProductId) {
+            showToast("Erreur lors de la modification du produit.", "error");
+            return;
+        }
+
+        let newName = editProductNameInput.value.trim();
+        let newDescription = editProductDescriptionInput.value.trim();
+
+        if (newName === "" || newDescription === "") {
+            showToast("Veuillez entrer un nom et une description de produit.", "error");
+            return;
+        }
+
+        let transaction = db.transaction(["products"], "readwrite");
+        let store = transaction.objectStore("products");
+
+        let request = store.get(editingProductId);
+        request.onsuccess = function () {
+            let product = request.result;
+            product.intitule = newName;
+            product.descriptif = newDescription;
+            product.modified = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+            let updateRequest = store.put(product);
+            updateRequest.onsuccess = function () {
+                console.log("Product updated successfully");
+                showToast("Produit modifié avec succès.", "success");
+                loadProducts(selectedCategoryId);
+            };
+
+            updateRequest.onerror = function (event) {
+                console.log("Error on update: " + event.target.errorCode);
+            };
+
+            editProductModal.style.display = "none";
+        };
+    }
+
+    // Bouton d'annulation pour modifier un produit
+    cancelEditProduct.onclick = function () {
+        editProductModal.style.display = "none";
     }
 
     // Fermer les fenetres des modals en cliquant ailleurs
@@ -445,6 +558,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (event.target === addProductModal) {
             addProductModal.style.display = "none";
+        }
+
+        if (event.target === editProductModal) {
+            editProductModal.style.display = "none";
+        }
+
+        if (event.target === deleteProductModal) {
+            deleteProductModal.style.display = "none";
         }
     }
 
