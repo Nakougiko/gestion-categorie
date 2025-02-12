@@ -31,7 +31,6 @@
     border-radius: 5px;
 }
 
-
 .category-name {
     font-size: 18px;
     font-weight: bold;
@@ -39,7 +38,7 @@
 }
 
 .category-name:before {
-    content: "📃 ";
+    content: "📦 ";
     font-size: 1.2em;
 }
 
