@@ -17,6 +17,7 @@ import {
 import { getDatabase, addProduct, getProductsByCategory, deleteProduct } from "./db.js";
 import { showToast } from "./toast.js";
 import { openModal, closeModal } from "./modals.js";
+import { enableDragAndDrop } from "./dragndrop.js";
 
 let selectedCategoryId = null;
 let editingProductId = null;
@@ -38,11 +39,14 @@ export function loadProducts(categoryId) {
     productContainer.innerHTML = "";
 
     getProductsByCategory(categoryId, (products) => {
+        products.sort((a, b) => a.order - b.order);
         products.forEach(product => {
             let productElement = createProductElement(product);
             productContainer.appendChild(productElement);
         });
     });
+
+    enableDragAndDrop(); // Active le Drag & Drop
 }
 
 /**
@@ -53,7 +57,10 @@ export function loadProducts(categoryId) {
 function createProductElement(product) {
     let productItem = document.createElement("div");
     productItem.classList.add("product-item");
+    productItem.setAttribute("data-product-id", product.id);
+
     productItem.innerHTML = `
+        <span class="drag-handle">☰</span>
         <span>${product.intitule}</span> - <p>${product.descriptif}</p>
         <div class="product-actions">
             <button class="edit-product">✏️</button>

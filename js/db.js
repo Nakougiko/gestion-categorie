@@ -5,7 +5,10 @@ let db;
  * @param {Function} callback - Fonction à exécuter une fois la BDD prête
  */
 export function openDatabase(callback) {
-    let request = indexedDB.open("categoriesDB", 2);
+    /*
+    * La version 3 ajoute l'ordre des élements dans la catégorie et les produits
+    */
+    let request = indexedDB.open("categoriesDB", 3);
 
     request.onupgradeneeded = function (event) {
         db = event.target.result;
@@ -14,6 +17,7 @@ export function openDatabase(callback) {
             let categoryStore = db.createObjectStore("categories", { keyPath: "id", autoIncrement: true });
             categoryStore.createIndex("intitule", "intitule", { unique: false });
             categoryStore.createIndex("parentId", "parentId", { unique: false });
+            categoryStore.createIndex("order", "order", { unique: false });
             categoryStore.createIndex("created", "created", { unique: false });
             categoryStore.createIndex("modified", "modified", { unique: false });
         }
@@ -23,6 +27,7 @@ export function openDatabase(callback) {
             productStore.createIndex("intitule", "intitule", { unique: false });
             productStore.createIndex("descriptif", "descriptif", { unique: false });
             productStore.createIndex("category", "category", { unique: false });
+            productStore.createIndex("order", "order", { unique: false });
             productStore.createIndex("created", "created", { unique: false });
             productStore.createIndex("modified", "modified", { unique: false });
         }
@@ -61,16 +66,22 @@ export function addCategory(category, callback) {
 
     let transaction = db.transaction(["categories"], "readwrite");
     let store = transaction.objectStore("categories");
-    let request = store.add(category);
 
-    request.onsuccess = function () {
-        console.log("✅ Catégorie ajoutée :", category);
-        if (callback) callback();
-    };
+    let countRequest = store.count(); // Compte le nombre de catégories
 
-    request.onerror = function (event) {
-        console.error("❌ Erreur lors de l'ajout de la catégorie :", event.target.errorCode);
-    };
+    countRequest.onsuccess = function () {
+        category.order = countRequest.result; // Definition de l'ordre
+        let request = store.add(category);
+
+        request.onsuccess = function () {
+            console.log("✅ Catégorie ajoutée :", category);
+            if (callback) callback();
+        };
+
+        request.onerror = function (event) {
+            console.error("❌ Erreur lors de l'ajout de la catégorie :", event.target.errorCode);
+        };
+    }
 }
 
 /**
@@ -86,8 +97,9 @@ export function getAllCategories(callback) {
     let request = store.getAll();
 
     request.onsuccess = function () {
-        console.log("📂 Catégories récupérées :", request.result);
-        if (callback) callback(request.result);
+        let categories = request.result.sort((a, b) => a.order - b.order); // Tri par ordre
+        console.log("📂 Catégories récupérées :", categories);
+        if (callback) callback(categories);
     };
 
     request.onerror = function (event) {
@@ -111,9 +123,9 @@ export function deleteCategory(categoryId, callback) {
     // Récupérer toutes les catégories pour trouver les sous-catégories
     let request = categoryStore.getAll();
     request.onsuccess = function () {
-        let allCategories = request.result;
-        let categoriesToDelete = [categoryId]; // Liste des catégories à supprimer (inclut la catégorie parent)
-        let productsToDelete = []; // Liste des produits à supprimer
+        let allCategories = request.result || [];
+        let categoriesToDelete = [categoryId];
+        let productsToDelete = [];
 
         // Fonction récursive pour récupérer toutes les sous-catégories en cascade
         function collectSubCategories(parentId) {
@@ -124,25 +136,38 @@ export function deleteCategory(categoryId, callback) {
             });
         }
 
-        collectSubCategories(categoryId); // Récupère toutes les sous-catégories en cascade
+        collectSubCategories(categoryId);
         console.log("🚮 Catégories à supprimer :", categoriesToDelete);
-
-        // Récupérer tous les produits liés aux catégories à supprimer
+         // Récupérer tous les produits liés aux catégories à supprimer
         let productRequest = productStore.getAll();
         productRequest.onsuccess = function () {
-            let allProducts = productRequest.result;
+            let allProducts = productRequest.result || [];
             productsToDelete = allProducts.filter(p => categoriesToDelete.includes(p.category)).map(p => p.id);
             console.log("🚮 Produits à supprimer :", productsToDelete);
-
-            // Suppression des catégories
-            categoriesToDelete.forEach(catId => categoryStore.delete(catId));
-
-            // Suppression des produits
-            productsToDelete.forEach(prodId => productStore.delete(prodId));
+            categoriesToDelete.forEach(catId => categoryStore.delete(catId)); // suppression des catégories
+            productsToDelete.forEach(prodId => productStore.delete(prodId)); // suppresion des produits
 
             transaction.oncomplete = function () {
                 console.log("✅ Suppression en cascade terminée.");
-                if (callback) callback();
+                
+                // Utiliser une nouvelle transaction après suppression
+                let newTransaction = db.transaction(["categories"], "readonly");
+                let newCategoryStore = newTransaction.objectStore("categories");
+                let newRequest = newCategoryStore.getAll();
+
+                newRequest.onsuccess = function () {
+                    let remainingCategories = newRequest.result || [];
+                    if (remainingCategories.length > 0) {
+                        recalculateCategoryOrder(remainingCategories, callback);
+                    } else {
+                        console.log("✅ Plus aucune catégorie restante après suppression.");
+                        if (callback) callback();
+                    }
+                };
+
+                newRequest.onerror = function (event) {
+                    console.error("❌ Erreur lors de la récupération des catégories après suppression :", event.target.errorCode);
+                };
             };
 
             transaction.onerror = function (event) {
@@ -163,16 +188,22 @@ export function addProduct(product, callback) {
 
     let transaction = db.transaction(["products"], "readwrite");
     let store = transaction.objectStore("products");
-    let request = store.add(product);
 
-    request.onsuccess = function () {
-        console.log("✅ Produit ajouté :", product);
-        if (callback) callback();
-    };
+    let countRequest = store.count(); // Compte le nombre de produits
 
-    request.onerror = function (event) {
-        console.error("❌ Erreur lors de l'ajout du produit :", event.target.errorCode);
-    };
+    countRequest.onsuccess = function () {
+        product.order = countRequest.result; // Definition de l'ordre
+        let request = store.add(product);
+
+        request.onsuccess = function () {
+            console.log("✅ Produit ajouté :", product);
+            if (callback) callback();
+        };
+
+        request.onerror = function (event) {
+            console.error("❌ Erreur lors de l'ajout du produit :", event.target.errorCode);
+        };
+    }
 }
 
 /**
@@ -190,8 +221,9 @@ export function getProductsByCategory(categoryId, callback) {
     let request = index.getAll(categoryId);
 
     request.onsuccess = function () {
-        console.log("📂 Produits récupérés pour la catégorie", categoryId, ":", request.result);
-        if (callback) callback(request.result);
+        let products = request.result.sort((a, b) => a.order - b.order); // Tri par ordre
+        console.log("📂 Produits récupérés pour la catégorie", categoryId, ":", products);
+        if (callback) callback(products);
     };
 
     request.onerror = function (event) {
@@ -210,14 +242,80 @@ export function deleteProduct(productId, callback) {
 
     let transaction = db.transaction(["products"], "readwrite");
     let store = transaction.objectStore("products");
-    let request = store.delete(productId);
 
+    let request = store.delete(productId);
     request.onsuccess = function () {
         console.log("✅ Produit supprimé :", productId);
+        recalculateProductOrder(productId.category); // Recalcul de l'ordre des produits
         if (callback) callback();
     };
 
     request.onerror = function (event) {
         console.error("❌ Erreur lors de la suppression du produit :", event.target.errorCode);
+    };
+}
+
+/**
+ * 📌 Met à jour l'ordre des catégories dans IndexedDB
+ * @param {Array} updatedCategories - Liste des catégories avec leur nouvel ordre
+ * @param {Function} callback - Fonction appelée après la mise à jour
+ */
+export function recalculateCategoryOrder(updatedCategories, callback) {
+    let db = getDatabase();
+    if (!db) return;
+
+    let transaction = db.transaction(["categories"], "readwrite");
+    let store = transaction.objectStore("categories");
+
+    if(!updatedCategories || updatedCategories.length === 0) {
+        console.warn("⚠️ Aucune catégorie à mettre à jour, recalcul annulé.");
+        if (callback) callback();
+        return;
+    }
+
+    updatedCategories.forEach((category, index) => {
+        let request = store.get(category.id);
+        request.onsuccess = function () {
+            let updatedCategories = request.result;
+    
+            if (updatedCategories) {
+                updatedCategories.order = index;
+                store.put(updatedCategories);
+            }
+        }
+    });
+
+    transaction.oncomplete = function () {
+        console.log("✅ Recalcul de l'ordre des catégories terminé !");
+        if (callback) callback();
+    };
+}
+
+/**
+ * 📌 Met à jour l'ordre des produits dans IndexedDB
+ * @param {Array} updatedProducts - Liste des produits avec leur nouvel ordre
+ * @param {Function} callback - Fonction appelée après la mise à jour
+ */
+export function recalculateProductOrder(updatedProducts, callback) {
+    let db = getDatabase();
+    if (!db) return;
+
+    let transaction = db.transaction(["products"], "readwrite");
+    let store = transaction.objectStore("products");
+
+    updatedProducts.forEach(product => {
+        let request = store.get(product.id);
+        request.onsuccess = function () {
+            let updatedProduct = request.result;
+            if (updatedProduct) {
+                updatedProduct.order = product.order;
+                store.put(updatedProduct);
+            }
+        };
+    });
+
+    transaction.oncomplete = function () {
+        console.log("✅ Recalcul de l'ordre des produits terminé !");
+        if (callback) callback();
     };
 }

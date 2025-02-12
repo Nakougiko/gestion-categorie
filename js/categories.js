@@ -27,6 +27,8 @@ import { openAddProductModal, loadProducts } from "./products.js";
 import { showToast } from "./toast.js";
 import { openModal, closeModal } from "./modals.js";
 
+import { enableDragAndDrop } from "./dragndrop.js";
+
 let categoryToDelete = null;
 let categoryToEdit = null;
 let parentCategoryId = null;
@@ -44,6 +46,8 @@ export function loadCategories() {
             let categoryContainer = createCategoryElement(category, 0, categories);
             categoryList.appendChild(categoryContainer);
         });
+
+        enableDragAndDrop(); // Active le Drag & Drop
     });
 }
 
@@ -81,6 +85,7 @@ addCategoryBtn.addEventListener("click", () => {
 function createCategoryElement(category, level = 0, allCategories = []) {
     let categoryContainer = document.createElement("div");
     categoryContainer.classList.add("category-container");
+    categoryContainer.setAttribute("data-category-id", category.id); // Stocker l'ID de la catégorie
 
     // Ajouter un léger décalage visuel pour les sous-catégories
     categoryContainer.style.marginLeft = `${level * 20}px`;
@@ -89,6 +94,7 @@ function createCategoryElement(category, level = 0, allCategories = []) {
 
     categoryContainer.innerHTML = `
         <div class="category-header">
+            <button class="drag-handle">☰</button>
             <span class="${categoryNameClass}">${category.intitule}</span>
             <div class="category-actions">
                 <button class="add-sub-category">➕</button>
@@ -106,6 +112,11 @@ function createCategoryElement(category, level = 0, allCategories = []) {
     categoryContainer.querySelector(".edit-category").addEventListener("click", () => editCategory(category.id, category.intitule));
     categoryContainer.querySelector(".delete-btn").addEventListener("click", () => confirmDeleteCategory(category.id));
 
+   document.getElementById("categoryList").appendChild(categoryContainer);
+
+    // Charger les produits
+    loadProducts(category.id);
+
     // Récupérer et afficher les sous-catégories (appel récursif)
     let subCategories = allCategories.filter(sub => sub.parentId === category.id);
     if (subCategories.length > 0) {
@@ -119,12 +130,6 @@ function createCategoryElement(category, level = 0, allCategories = []) {
         });
     }
     
-    // Ajoute la catégorie au DOM avant de charger les produits
-    document.getElementById("categoryList").appendChild(categoryContainer);
-
-    // Charger les produits de la catégorie
-    loadProducts(category.id);
-
     return categoryContainer;
 }
 
