@@ -1,6 +1,6 @@
 /* Style du fond du modal */
 .modal {
-    display: none;
+    display: flex;
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -10,6 +10,14 @@
     background-color: rgba(0, 0, 0, 0.5);
     justify-content: center;
     align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
 }
 
 /* Contenu du modal */
@@ -19,7 +27,24 @@
     border-radius: 10px;
     width: 400px;
     text-align: center;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 6px rgba(0, 0, 0, 0.3);
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+}
+
+.modal.show .modal-content {
+    transform: scale(1);
+}
+
+.modal.hide {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2 ease, visibility 0.2s ease;
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
 }
 
 /* Boutons */

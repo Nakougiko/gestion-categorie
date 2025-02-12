@@ -12,17 +12,24 @@
     margin: 5px 0;
     border-radius: 5px;
     display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.product-header {
+    display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.product-item span {
-    font-weight: bold;
-    color: var(--vert-light);
+.product-name {
     font-size: 1.2em;
+    color: var(--vert-light);
+    font-weight: bold;
+    flex-grow: 1;
 }
 
-.product-item::before {
+.product-name::before {
     content: "📃 ";
     font-size: 1.2em;
 }
@@ -43,4 +50,14 @@
 .product-actions button:hover {
     background: var(--background-color);
     color: white;
+}
+
+.product-description {
+    margin: 0;
+    padding: 10px 25px;
+    font-size: 0,9em;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    background-color: var(--background-color-accent);
+    border-radius: 5px;
 }

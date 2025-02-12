@@ -8,7 +8,8 @@ import {
  * @param {HTMLElement} modal - L'élément modal à afficher
  */
 export function openModal(modal) {
-    modal.style.display = "flex";
+    modal.classList.remove("hide");
+    modal.classList.add("show");
 }
 
 /**
@@ -16,7 +17,11 @@ export function openModal(modal) {
  * @param {HTMLElement} modal - L'élément modal à cacher
  */
 export function closeModal(modal) {
-    modal.style.display = "none";
+    modal.classList.remove("show");
+    modal.classList.add("hide");
+    setTimeout(() => {
+        modal.classList.remove("hide");
+    }, 200);
 }
 
 /**

@@ -60,13 +60,17 @@ function createProductElement(product) {
     productItem.setAttribute("data-product-id", product.id);
 
     productItem.innerHTML = `
-        <span class="drag-handle">☰</span>
-        <span>${product.intitule}</span> - <p>${product.descriptif}</p>
-        <div class="product-actions">
-            <button class="edit-product">✏️</button>
-            <button class="delete-product">🗑️</button>
+        <div class="product-header">
+            <span class="drag-handle">☰</span>
+            <span class="product-name">${product.intitule}</span>
+            <div class="product-actions">
+                <button class="edit-product">✏️</button>
+                <button class="delete-product">🗑️</button>
+            </div>
         </div>
-    `;
+        <hr>
+        <p class="product-description">${product.descriptif}</p>
+        `;
 
     productItem.querySelector(".edit-product").addEventListener("click", () => editProduct(product));
     productItem.querySelector(".delete-product").addEventListener("click", () => confirmDeleteProductModal(product.id));
