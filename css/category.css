@@ -34,6 +34,23 @@
     box-shadow: 5px 5px 35px 5px var(--text-color);
 }
 
+/* Masquer les sous-catégories et produits quand la catégories est cachée */
+.category-container[data-hidden="true"] .sub-category-container,
+.category-container[data-hidden="true"] .product-container {
+    display: none;
+}
+
+.category-container[data-hidden="true"] {
+    opacity: 0.5;
+}
+
+.toggle-visibility {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+}
+
 .category-header {
     display: flex;
     justify-content: start;

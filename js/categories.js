@@ -87,6 +87,9 @@ function createCategoryElement(category, level = 0, allCategories = []) {
     categoryContainer.classList.add("category-container");
     categoryContainer.setAttribute("data-category-id", category.id); // Stocker l'ID de la catégorie
 
+    // Ajout d'une classe pour masquer les enfants
+    categoryContainer.dataset.hidden = "false";
+
     // Ajouter un léger décalage visuel pour les sous-catégories
     categoryContainer.style.marginLeft = `${level * 20}px`;
 
@@ -94,6 +97,7 @@ function createCategoryElement(category, level = 0, allCategories = []) {
 
     categoryContainer.innerHTML = `
         <div class="category-header">
+            <button class="toggle-visibility">🔽</button>
             <button class="drag-handle">☰</button>
             <span class="${categoryNameClass}">${category.intitule}</span>
             <div class="category-actions">
@@ -111,6 +115,7 @@ function createCategoryElement(category, level = 0, allCategories = []) {
     categoryContainer.querySelector(".add-product").addEventListener("click", () => openAddProductModal(category.id));
     categoryContainer.querySelector(".edit-category").addEventListener("click", () => editCategory(category.id, category.intitule));
     categoryContainer.querySelector(".delete-btn").addEventListener("click", () => confirmDeleteCategory(category.id));
+    categoryContainer.querySelector(".toggle-visibility").addEventListener("click", () => { toggleCategoryVisibility(category.id, categoryContainer); });
 
    document.getElementById("categoryList").appendChild(categoryContainer);
 
@@ -261,3 +266,28 @@ confirmAddSubCategory.addEventListener("click", () => {
 cancelAddSubCategory.addEventListener("click", () => {
     closeModal(addSubCategoryModal);
 });
+
+/**
+ * 📌 Masque ou affiche les sous-catégories et produits d'une catégorie
+ * @param {number} categoryId - ID de la catégorie
+ * @param {HTMLElement} categoryContainer - Élément HTML de la catégorie
+ */
+function toggleCategoryVisibility(categoryId, categoryContainer) {
+    let isHidden = categoryContainer.dataset.hidden === "true";
+    let subCategoryContainer = categoryContainer.querySelector(".sub-category-container");
+    let productList = categoryContainer.querySelector(".product-list");
+
+    if (subCategoryContainer) {
+        subCategoryContainer.style.display = isHidden ? "block" : "none";
+    }
+    
+    if (productList) {
+        productList.style.display = isHidden ? "block" : "none";
+    }
+
+    categoryContainer.dataset.hidden = isHidden ? "false" : "true";
+
+    // Change l'icône du bouton
+    let toggleBtn = categoryContainer.querySelector(".toggle-visibility");
+    toggleBtn.textContent = isHidden ? "🔽" : "▶️"; // Icône différente quand c'est masqué
+}
