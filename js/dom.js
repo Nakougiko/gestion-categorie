@@ -2,6 +2,7 @@
 export const categoryInput = document.getElementById("categoryName");
 export const addCategoryBtn = document.getElementById("addCategory");
 export const categoryList = document.getElementById("categoryList");
+export const searchInput = document.getElementById("searchInput");
 
 // Modals Suppression
 export const deleteModal = document.getElementById("deleteModal");
