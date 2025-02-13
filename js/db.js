@@ -319,3 +319,55 @@ export function recalculateProductOrder(updatedProducts, callback) {
         if (callback) callback();
     };
 }
+
+/**
+ * 📌 Met à jour le parent d'une catégorie (changement de parent via le dragndrop)
+ * @param {number} categoryId - ID de la catégorie deplacer
+ * @param {number} newParentId - ID de la nouvelle catégorie parent
+ * @param {Function} callback - Fonction appelée après la mise à jour
+ */
+export function updateCategoryParent(categoryId, newParentId, callback) {
+    let db = getDatabase();
+    if (!db) return;
+
+    let transaction = db.transaction(["categories"], "readwrite");
+    let store = transaction.objectStore("categories");
+
+    let request = store.get(categoryId);
+    request.onsuccess = function () {
+        let category = request.result;
+        category.parentId = newParentId
+
+        let updateRequest = store.put(category);
+        updateRequest.onsuccess = function () {
+            console.log(`✅ Catégorie ${categoryId} déplacée sous ${newParentId}`);
+            if (callback) callback();
+        }
+    }
+}
+
+/**
+ * 📌 Met à jour le parent d'une catégorie (changement de parent via le dragndrop)
+ * @param {number} productId - ID du produit à déplacer
+ * @param {number} newCategoryId - ID de la nouvelle catégorie parent
+ * @param {Function} callback - Fonction appelée après la mise à jour
+ */
+export function updateProductCategory(productId, newCategoryId, callback) {
+    let db = getDatabase();
+    if (!db) return;
+
+    let transaction = db.transaction(["products"], "readwrite");
+    let store = transaction.objectStore("products");
+
+    let request = store.get(productId);
+    request.onsuccess = function () {
+        let product = request.result;
+        product.category = newCategoryId;
+
+        let updateRequest = store.put(product);
+        updateRequest.onsuccess = function () {
+            console.log(`✅ Produit ${productId} déplacé dans la catégorie ${newCategoryId}`);
+            if (callback) callback();
+        }
+    }
+}
