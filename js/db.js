@@ -1,3 +1,5 @@
+import { loadCategories } from "./categories.js";
+import { loadProducts } from "./products.js";
 let db;
 
 /**
@@ -232,7 +234,7 @@ export function getProductsByCategory(categoryId, callback) {
 }
 
 /**
- * 📌 Supprime un produit de IndexedDB
+ * 📌 Supprime un produit de IndexedDB et met à jour l'affichage
  * @param {number} productId - ID du produit à supprimer
  * @param {Function} callback - Fonction exécutée après suppression
  */
@@ -243,15 +245,49 @@ export function deleteProduct(productId, callback) {
     let transaction = db.transaction(["products"], "readwrite");
     let store = transaction.objectStore("products");
 
-    let request = store.delete(productId);
+    // Récupérer le produit pour connaître sa catégorie
+    let request = store.get(productId);
     request.onsuccess = function () {
-        console.log("✅ Produit supprimé :", productId);
-        recalculateProductOrder(productId.category); // Recalcul de l'ordre des produits
-        if (callback) callback();
+        let product = request.result;
+        if (!product) {
+            console.warn(`⚠ Produit avec ID ${productId} non trouvé.`);
+            if (callback) callback();
+            return;
+        }
+
+        let categoryId = product.category; // On récupère la catégorie du produit avant suppression
+
+        // Supprimer le produit
+        let deleteRequest = store.delete(productId);
+        deleteRequest.onsuccess = function () {
+            console.log("✅ Produit supprimé :", productId);
+
+            // Vérifier s'il reste des produits dans cette catégorie
+            let getRemainingProducts = store.index("category").getAll(categoryId);
+            getRemainingProducts.onsuccess = function () {
+                let remainingProducts = getRemainingProducts.result || [];
+
+                if (remainingProducts.length > 0) {
+                    recalculateProductOrder(remainingProducts, () => {
+                        loadProducts(categoryId);
+                        loadCategories(); // 🔥 Recharger les catégories pour éviter tout bug d'affichage
+                        if (callback) callback();
+                    });
+                } else {
+                    console.warn(`⚠ Plus aucun produit dans la catégorie ${categoryId}.`);
+                    loadCategories(); // 🔥 Recharger pour éviter un affichage corrompu
+                    if (callback) callback();
+                }
+            };
+        };
+
+        deleteRequest.onerror = function (event) {
+            console.error("❌ Erreur lors de la suppression du produit :", event.target.errorCode);
+        };
     };
 
     request.onerror = function (event) {
-        console.error("❌ Erreur lors de la suppression du produit :", event.target.errorCode);
+        console.error("❌ Erreur lors de la récupération du produit à supprimer :", event.target.errorCode);
     };
 }
 

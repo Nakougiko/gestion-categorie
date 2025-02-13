@@ -1,17 +1,17 @@
-import { 
-    addProductModal, 
-    productNameInput, 
-    productDescriptionInput, 
-    confirmAddProduct, 
+import {
+    addProductModal,
+    productNameInput,
+    productDescriptionInput,
+    confirmAddProduct,
     cancelAddProduct,
-    editProductModal, 
-    editProductNameInput, 
-    editProductDescriptionInput, 
-    saveEditProduct, 
-    cancelEditProduct, 
-    deleteProductModal, 
-    confirmDeleteProduct, 
-    cancelDeleteProduct 
+    editProductModal,
+    editProductNameInput,
+    editProductDescriptionInput,
+    saveEditProduct,
+    cancelEditProduct,
+    deleteProductModal,
+    confirmDeleteProduct,
+    cancelDeleteProduct
 } from "./dom.js";
 
 import { getDatabase, addProduct, getProductsByCategory, deleteProduct } from "./db.js";
@@ -21,6 +21,8 @@ import { enableDragAndDrop } from "./dragndrop.js";
 
 let selectedCategoryId = null;
 let editingProductId = null;
+
+let clipboard = { type: null, data: null };
 
 /**
  * 📌 Charge et affiche les produits d'une catégorie
@@ -32,7 +34,7 @@ export function loadProducts(categoryId) {
 
     let productContainer = document.getElementById(`product-list-${categoryId}`);
     if (!productContainer) {
-        console.error(`⚠️ Impossible de trouver le conteneur des produits pour la catégorie ${categoryId}`);
+        console.warn(`⚠️ Impossible de trouver le conteneur des produits pour la catégorie ${categoryId}`);
         return;
     }
 
@@ -64,8 +66,13 @@ function createProductElement(product) {
             <span class="drag-handle">☰</span>
             <span class="product-name">${product.intitule}</span>
             <div class="product-actions">
+            <button class="product-details">🔍</button>
                 <button class="edit-product">✏️</button>
                 <button class="delete-product">🗑️</button>
+                <div class="copy-paste">
+                    <button class="copy-product">📋</button>
+                    <button class="paste-product" style="display: none;">📎</button>
+                </div>
             </div>
         </div>
         <hr>
@@ -74,6 +81,49 @@ function createProductElement(product) {
 
     productItem.querySelector(".edit-product").addEventListener("click", () => editProduct(product));
     productItem.querySelector(".delete-product").addEventListener("click", () => confirmDeleteProductModal(product.id));
+
+    // Copier le produit
+    productItem.querySelector(".copy-product").addEventListener("click", () => {
+        clipboard = { type: "product", data: {...product} };
+        delete clipboard.data.id; // Supprimer l'ID pour éviter les doublons
+
+        document.querySelectorAll(".paste-product").forEach(btn => btn.style.display = "inline"); // Afficher "Coller"
+        showToast("Produit copié.", "success");
+    });
+
+    // Coller le produit dans une autre catégorie
+    productItem.querySelector(".paste-product").addEventListener("click", () => {
+        if (clipboard.type !== "product") {
+            showToast("Aucun produit à coller ici.", "error");
+            return;
+        }
+
+        let categoryElement = productItem.closest(".category-container");
+        let targetCategoryId = Number(categoryElement.getAttribute("data-category-id"));
+
+        if (!targetCategoryId) {
+            showToast("Impossible de coller le produit ici.", "error");
+            return;
+        }
+
+        let newProduct = {
+            ...clipboard.data,
+            intitule: `${clipboard.data.intitule} (copie)`,
+            descriptif: `${clipboard.data.descriptif} (copie)`,
+            category: targetCategoryId,
+            order: clipboard.data.order + 1,
+            created: new Date().toISOString().slice(0, 19).replace("T", " "),
+            modified: new Date().toISOString().slice(0, 19).replace("T", " "),
+         };
+
+         delete newProduct.id; // Supprimer l'ID pour éviter les doublons
+
+        addProduct(newProduct, () => {
+            showToast("Produit collé avec succès.", "success");
+            loadProducts(selectedCategoryId);
+        });
+        // Fin de la copie
+    });
 
     return productItem;
 }

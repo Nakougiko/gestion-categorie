@@ -1,25 +1,25 @@
-import { 
-    categoryInput, 
-    addCategoryBtn, 
-    categoryList, 
-    editModal, 
-    editInput, 
-    updateCategory, 
-    cancelEdit, 
-    deleteModal, 
-    confirmDelete, 
-    cancelDelete, 
-    addSubCategoryModal, 
-    confirmAddSubCategory, 
-    cancelAddSubCategory, 
+import {
+    categoryInput,
+    addCategoryBtn,
+    categoryList,
+    editModal,
+    editInput,
+    updateCategory,
+    cancelEdit,
+    deleteModal,
+    confirmDelete,
+    cancelDelete,
+    addSubCategoryModal,
+    confirmAddSubCategory,
+    cancelAddSubCategory,
     subCategoryNameInput
 } from "./dom.js";
 
-import { 
-    getDatabase, 
-    getAllCategories, 
-    addCategory, 
-    deleteCategory 
+import {
+    getDatabase,
+    getAllCategories,
+    addCategory,
+    deleteCategory
 } from "./db.js";
 
 import { openAddProductModal, loadProducts } from "./products.js";
@@ -32,6 +32,8 @@ import { enableDragAndDrop } from "./dragndrop.js";
 let categoryToDelete = null;
 let categoryToEdit = null;
 let parentCategoryId = null;
+
+let clipboard = { type: null, data: null, name: null }; // Stocke l'élément copié (catégorie ou produit)
 
 /**
  * Charge et affiche les catégories et sous-catégories depuis IndexedDB (récursif)
@@ -63,7 +65,7 @@ addCategoryBtn.addEventListener("click", () => {
 
     let newCategory = {
         intitule: categoryName,
-        parentId: null, 
+        parentId: null,
         created: new Date().toISOString().slice(0, 19).replace("T", " "),
         modified: new Date().toISOString().slice(0, 19).replace("T", " "),
     };
@@ -101,13 +103,17 @@ function createCategoryElement(category, level = 0, allCategories = []) {
             <button class="drag-handle">☰</button>
             <span class="${categoryNameClass}">${category.intitule}</span>
             <div class="category-actions">
+                <div class="copy-paste">
+                    <button class="copy-category">📋</button>
+                    <button class="paste-category" style="display: none;">📎</button>
+                </div>
                 <button class="add-sub-category">➕</button>
                 <button class="add-product">🛒</button>
                 <button class="edit-category">✏️</button>
                 <button class="delete-btn">🗑️</button>
+                </div>
             </div>
-        </div>
-        <div class="product-list" id="product-list-${category.id}"></div>
+            <div class="product-list" id="product-list-${category.id}"></div>
     `;
 
     // Ajout des événements
@@ -117,7 +123,41 @@ function createCategoryElement(category, level = 0, allCategories = []) {
     categoryContainer.querySelector(".delete-btn").addEventListener("click", () => confirmDeleteCategory(category.id));
     categoryContainer.querySelector(".toggle-visibility").addEventListener("click", () => { toggleCategoryVisibility(category.id, categoryContainer); });
 
-   document.getElementById("categoryList").appendChild(categoryContainer);
+    // Copie de catégorie
+    categoryContainer.querySelector(".copy-category").addEventListener("click", () => {
+        clipboard = { type: "category", data: { ...category }, name: category.intitule };
+        delete clipboard.data.id; // Supprimer l'ID pour éviter les doublons
+
+        document.querySelectorAll(".paste-category").forEach(btn => btn.style.display = "inline"); // Afficher "Coller"
+        showToast("Catégorie copiée.", "info");
+    });
+
+    // Coller une catégorie
+    categoryContainer.querySelector(".paste-category").addEventListener("click", () => {
+        if (clipboard.type !== "category") {
+            showToast("Aucune catégorie copiée à coller ici.", "error");
+            return;
+        }
+
+        let newCategory = {
+            ...clipboard.data,
+            intitule: `${clipboard.name} (copie)`,
+            parentId: category.id,
+            order: category.order + 1,
+            created: new Date().toISOString().slice(0, 19).replace("T", " "),
+            modified: new Date().toISOString().slice(0, 19).replace("T", " ")
+        };
+
+        delete newCategory.id; // Supprimer l'ID pour éviter les doublons
+
+        addCategory(newCategory, () => {
+            loadCategories();
+            showToast(`Catégorie "${newCategory.intitule}" collée sous "${category.intitule}"`, "success");
+        });
+        // Fin de la copie
+    });
+
+    document.getElementById("categoryList").appendChild(categoryContainer);
 
     // Charger les produits
     loadProducts(category.id);
@@ -134,7 +174,7 @@ function createCategoryElement(category, level = 0, allCategories = []) {
             subCategoryContainer.appendChild(subCategoryElement);
         });
     }
-    
+
     return categoryContainer;
 }
 
@@ -232,7 +272,7 @@ cancelDelete.addEventListener("click", () => {
 function addSubCategory(categoryId) {
     parentCategoryId = categoryId;
     subCategoryNameInput.value = "";
-    openModal(addSubCategoryModal);    
+    openModal(addSubCategoryModal);
 }
 
 /**
@@ -247,7 +287,7 @@ confirmAddSubCategory.addEventListener("click", () => {
 
     let newCategory = {
         intitule: subCategoryName,
-        parentId: parentCategoryId, 
+        parentId: parentCategoryId,
         created: new Date().toISOString().slice(0, 19).replace("T", " "),
         modified: new Date().toISOString().slice(0, 19).replace("T", " "),
     };
@@ -280,7 +320,7 @@ function toggleCategoryVisibility(categoryId, categoryContainer) {
     if (subCategoryContainer) {
         subCategoryContainer.style.display = isHidden ? "block" : "none";
     }
-    
+
     if (productList) {
         productList.style.display = isHidden ? "block" : "none";
     }
