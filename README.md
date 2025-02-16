@@ -83,6 +83,7 @@ Aucune installation requise. Tout fonctionne en local grâce à `IndexedDB`.
 - Ajout d’une option **Exporter/Importer la base IndexedDB**
 - Possibilité de **sauvegarder les données en JSON**
 - Ajout d’une **interface plus moderne** (avec Tailwind ou Bootstrap)
+- Ajout d'un menu contextuelle (clic droit), pour certaines actions (suppression, copie, ...)
 
 ---
 
